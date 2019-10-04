@@ -1,56 +1,42 @@
 import React, { useState, useEffect } from 'react';
+import _isEmpty from 'lodash/isEmpty'
+import axios from 'axios'
+
 import './App.css';
 import 'milligram/dist/milligram.min.css'
+import AddVoucher from './AddVoucher';
 
-const data = [
-  {
-    voucherCode: 'vc1',
-    dateOfAvailment: '2019/10/02',
-    landersMembersID: 'lmid1',
-    accumulatedPurchase: 12.3,
-    payableToLanders: 300
-  },
-  {
-    voucherCode: 'vc2',
-    dateOfAvailment: '2019/10/02',
-    landersMembersID: 'lmid1',
-    accumulatedPurchase: 12.3,
-    payableToLanders: 300
-  },
-  {
-    voucherCode: 'vc3',
-    dateOfAvailment: '2019/10/02',
-    landersMembersID: 'lmid1',
-    accumulatedPurchase: 12.3,
-    payableToLanders: 300
-  },
-  {
-    voucherCode: 'vc4',
-    dateOfAvailment: '2019/10/02',
-    landersMembersID: 'lmid1',
-    accumulatedPurchase: 12.3,
-    payableToLanders: 300
-  },
-]
+// const voucherData = {
+//   voucherCode: 'vc1',
+//   dateOfAvailment: 'qwdqwd',
+//   landersMembersID: 'LD1',
+//   accumulatedPurchase: 30,
+//   payableToLanders: 2525
+// }
 
-function getVouchers(code) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const result = data.filter(vCode => vCode.voucherCode === code)
-      if (result.length > 0) {
-        resolve(result)
-      } else {
-        reject({ error: 'Voucher not found'})
-      }
-    }, 2000);
-  })
-}
+// function wait(ms) {
+//   return new Promise(resolve => setTimeout(resolve, ms));
+// }
+
+// async function fetchVoucher(code) {
+//   await wait(2000)
+//   if (code === voucherData.voucherCode) {
+//     return voucherData
+//   }
+//   return {
+//     voucherCode: code,
+//     dateOfAvailment: '',
+//     landersMembersID: '',
+//     accumulatedPurchase: '',
+//     payableToLanders: ''
+//   }
+// }
 
 function App() {
-  const [vouchers, setVouchers] = useState([])
+  const [voucher, setVoucher] = useState({})
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState('')
-  const [isError, setIsError] = useState(false)
+  const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const onChange = e => setQuery(e.target.value)
@@ -63,66 +49,85 @@ function App() {
   useEffect(() => {
     const searchVoucher = async () => {
 
-      // Start request
       setIsLoading(true)
-      setIsError(false)
+      setError(null)
 
       try {
-        const result = await getVouchers(search)
-        setVouchers(result)
+        // const result = await fetch(`http://${window.location.hostname}:3800/voucher/${search}`)
+        const { data } = await axios.get(`http://192.168.1.20:3800/voucher/${search}`)
+
+        if (data.landersMembersID) {
+          setVoucher(data)
+        } else {
+          setError({ message: `Lander member not found for voucher: ${search.toUpperCase()}` })
+          setVoucher(data)
+        }
+
       } catch (error) {
-        setIsError(true)
+        setError({ message: 'Something wrong, maybe server was shut down :)'})
+      } finally {
+        setIsLoading(false)
       }
-      setIsLoading(false)
     };
 
     if (search) searchVoucher()
     return () => {
-      setVouchers([])
+      setVoucher({})
+      setError({})
     }
   }, [search]);
 
-  const renderTable = () => {
-    if (vouchers.length > 0) return (
-      <table>
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Date Of Availment</th>
-            <th>Landers Members ID</th>
-            <th>Accumulated Purchase</th>
-            <th>Payable To Landers</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vouchers.map(v => 
-            <tr key={v.voucherCode}>
-              <td>{v.voucherCode}</td>
-              <td>{v.dateOfAvailment}</td>
-              <td>{v.landersMembersID}</td>
-              <td>{v.accumulatedPurchase}</td>
-              <td>{v.payableToLanders}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    )
-    return null
+  // const renderTable = () => voucher && voucher.landersMembersID && (
+  //   <table>
+  //     <thead>
+  //       <tr>
+  //         <th>Code</th>
+  //         <th>Date Of Availment</th>
+  //         <th>Landers Members ID</th>
+  //         <th>Accumulated Purchase</th>
+  //         <th>Payable To Landers</th>
+  //         <th></th>
+  //       </tr>
+  //     </thead>
+  //     <tbody>
+  //       <tr>
+  //         <td>{voucher.voucherCode}</td>
+  //         <td>{voucher.dateOfAvailment}</td>
+  //         <td>{voucher.landersMembersID}</td>
+  //         <td>{voucher.accumulatedPurchase}</td>
+  //         <td>{voucher.payableToLanders}</td>
+  //         <td>
+  //           <button className="button button-small">Add Code</button>
+  //         </td>
+  //       </tr>
+  //     </tbody>
+  //   </table>
+  // )
+
+  const renderDetail = () => {
+    if (!_isEmpty(voucher) && voucher.landersMembersID) {
+      return (
+        <div className="voucher-detail">
+          <p><strong>Code: </strong>{voucher.voucherCode}</p>
+          <p><strong>Date Of Availment: </strong>{voucher.dateOfAvailment}</p>
+          <p><strong>Landers Members ID: </strong>{voucher.landersMembersID}</p>
+        </div>
+      )
+    }
   }
 
   return (
-    <div className="App">
+    <div className="container" style={{ marginTop: `3em` }}>
       <form onSubmit={onSubmit}>
-        <fieldset style={{ display: 'flex' }}>
+        <fieldset>
           <input value={query} type="text" onChange={onChange} placeholder="Enter voucher code" />
-          <button type="submit" className="button button-outline">Search</button>
+          <input type="submit" className="button button-outline button-small" value="Search" />
         </fieldset>
       </form>
-      {isLoading 
-        ? (<p>Loading ... </p>)
-        : renderTable()
-      }
-      {isError && <p>Voucher not found</p>}
+
+      {isLoading ? (<p>Loading ... </p>) : renderDetail()}
+      {error && <div className="error-wrapper"><p>{error.message}</p></div>}
+      {(!_isEmpty(voucher) && !voucher.landersMembersID) && <AddVoucher code={voucher.voucherCode} />}
     </div>
   );
 }
