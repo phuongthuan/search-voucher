@@ -1,36 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import _isEmpty from 'lodash/isEmpty'
 import axios from 'axios'
+import moment from 'moment'
 
-import './App.css';
 import 'milligram/dist/milligram.min.css'
+import './App.css';
 import AddVoucher from './AddVoucher';
+import Spinner from './Spinner';
+import { BASE_URL } from './utils/constants';
 
-// const voucherData = {
-//   voucherCode: 'vc1',
-//   dateOfAvailment: 'qwdqwd',
-//   landersMembersID: 'LD1',
-//   accumulatedPurchase: 30,
-//   payableToLanders: 2525
-// }
-
-// function wait(ms) {
-//   return new Promise(resolve => setTimeout(resolve, ms));
-// }
-
-// async function fetchVoucher(code) {
-//   await wait(2000)
-//   if (code === voucherData.voucherCode) {
-//     return voucherData
-//   }
-//   return {
-//     voucherCode: code,
-//     dateOfAvailment: '',
-//     landersMembersID: '',
-//     accumulatedPurchase: '',
-//     payableToLanders: ''
-//   }
-// }
+// eslint-disable-next-line
+import { fetchVoucher } from './helpers/fakeApi';
 
 function App() {
   const [voucher, setVoucher] = useState({})
@@ -53,81 +33,67 @@ function App() {
       setError(null)
 
       try {
-        // const result = await fetch(`http://${window.location.hostname}:3800/voucher/${search}`)
-        const { data } = await axios.get(`http://192.168.1.20:3800/voucher/${search}`)
 
-        if (data.landersMembersID) {
+        // const data = await fetchVoucher(search)
+
+        const requestUrl = `${BASE_URL}/voucher/${search}`
+        const { data } = await axios.get(requestUrl)
+
+        if (data.voucherCode && data.newOrRenewedMemberId) {
+          setVoucher(data)
+        } else if (data.voucherCode && !data.newOrRenewedMemberId) {
+          setError({ message: `Voucher not used, please enter member ID linked to this voucher.` })
           setVoucher(data)
         } else {
-          setError({ message: `Lander member not found for voucher: ${search.toUpperCase()}` })
-          setVoucher(data)
+          setError({ message: `Voucher Code Invalid` })
         }
 
       } catch (error) {
-        setError({ message: 'Something wrong, maybe server was shut down :)'})
+        setError({ message: 'Something wrong, maybe server was shut down :).'})
       } finally {
         setIsLoading(false)
       }
     };
 
     if (search) searchVoucher()
+
     return () => {
       setVoucher({})
       setError({})
+      setSearch('')
     }
   }, [search]);
 
-  // const renderTable = () => voucher && voucher.landersMembersID && (
-  //   <table>
-  //     <thead>
-  //       <tr>
-  //         <th>Code</th>
-  //         <th>Date Of Availment</th>
-  //         <th>Landers Members ID</th>
-  //         <th>Accumulated Purchase</th>
-  //         <th>Payable To Landers</th>
-  //         <th></th>
-  //       </tr>
-  //     </thead>
-  //     <tbody>
-  //       <tr>
-  //         <td>{voucher.voucherCode}</td>
-  //         <td>{voucher.dateOfAvailment}</td>
-  //         <td>{voucher.landersMembersID}</td>
-  //         <td>{voucher.accumulatedPurchase}</td>
-  //         <td>{voucher.payableToLanders}</td>
-  //         <td>
-  //           <button className="button button-small">Add Code</button>
-  //         </td>
-  //       </tr>
-  //     </tbody>
-  //   </table>
-  // )
-
   const renderDetail = () => {
-    if (!_isEmpty(voucher) && voucher.landersMembersID) {
+    if (!_isEmpty(voucher) && voucher.newOrRenewedMemberId) {
+      const { voucherCode, landersMembersID, newOrRenewedMemberId, orderNumber, membershipType, branchOfAvailment, dateOfAvailment } = voucher
+      const formatDate = moment(dateOfAvailment).format('YYYY-MM-DD')
       return (
         <div className="voucher-detail">
-          <p><strong>Code: </strong>{voucher.voucherCode}</p>
-          <p><strong>Date Of Availment: </strong>{voucher.dateOfAvailment}</p>
-          <p><strong>Landers Members ID: </strong>{voucher.landersMembersID}</p>
+          <p><strong>Code: </strong>{voucherCode}</p>
+          <p><strong>Members ID: </strong>{landersMembersID}</p>
+          <p><strong>Order ID: </strong>{orderNumber}</p>
+          <p><strong>New or Renew Member ID: </strong>{newOrRenewedMemberId}</p>
+          <p><strong>Member Type: </strong>{membershipType}</p>
+          <p><strong>Date Availment: </strong>{formatDate}</p>
+          <p><strong>Branch Availment: </strong>{branchOfAvailment}</p>
         </div>
       )
     }
   }
 
   return (
-    <div className="container" style={{ marginTop: `3em` }}>
+    <div style={{ maxWidth: `900px`, margin: `0 auto`, paddingTop: `2rem` }}>
       <form onSubmit={onSubmit}>
         <fieldset>
-          <input value={query} type="text" onChange={onChange} placeholder="Enter voucher code" />
-          <input type="submit" className="button button-outline button-small" value="Search" />
+          <input value={query} type="text" onChange={onChange} placeholder="Enter voucher code" required />
+          <input type="submit" className="button button-primary" value="Search" />
         </fieldset>
       </form>
 
-      {isLoading ? (<p>Loading ... </p>) : renderDetail()}
-      {error && <div className="error-wrapper"><p>{error.message}</p></div>}
-      {(!_isEmpty(voucher) && !voucher.landersMembersID) && <AddVoucher code={voucher.voucherCode} />}
+      {isLoading ? <Spinner /> : renderDetail()}
+      {!_isEmpty(error) && <div className="error-wrapper"><p>{error.message}</p></div>}
+      {!_isEmpty(voucher) && !voucher.newOrRenewedMemberId && voucher.voucherCode && <AddVoucher code={voucher.voucherCode} />}
     </div>
   );
 }

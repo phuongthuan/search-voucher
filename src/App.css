@@ -1,9 +1,31 @@
-.container {
-  margin-top: 3rem;
+:root {
+  --main-bg-color: #80af46;
+}
+
+input, select {
+  border-color: var(--main-bg-color) !important;
+}
+
+input[type='date'] {
+  background-color: transparent;
+  border: 0.1rem solid #d1d1d1;
+  border-radius: .4rem;
+  box-shadow: none;
+  box-sizing: inherit;
+  height: 3.8rem;
+  padding: .6rem 1.0rem;
+  width: 100%;
+  outline: none;
+}
+
+form {
+  margin: 0 !important;
 }
 
 .button {
-  margin: 0;
+  margin: 0 !important;
+  background-color: var(--main-bg-color) !important;
+  border-color: var(--main-bg-color) !important;
 }
 
 .button.button-small {
@@ -24,12 +46,47 @@
 }
 
 .error-wrapper {
-  padding: 3rem;
+  padding: 1.5rem;
   background: #eeeeee;
   border-radius: .4rem;
   color: red;
 }
 
-.error-wrapper p {
+.success-wrapper {
+  padding: 1.5rem;
+  background: #eeeeee;
+  border-radius: .4rem;
+  color: var(--main-bg-color);
+}
+
+.error-wrapper p, .success-wrapper p {
   margin-bottom: 0;
+}
+
+.lds-dual-ring {
+  margin-top: 0.6rem;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+}
+
+.lds-dual-ring:after {
+  content: " ";
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin: 1px;
+  border-radius: 50%;
+  border: 3px solid var(--main-bg-color);
+  border-color: var(--main-bg-color) transparent var(--main-bg-color) transparent;
+  animation: lds-dual-ring 1.2s linear infinite;
+}
+
+@keyframes lds-dual-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
